@@ -56,7 +56,6 @@ common base-settings
                      , Network.Minio.XmlParser
                      , Network.Minio.JsonParser
   build-depends:       base >= 4.7 && < 5
-                     , protolude >= 0.3 && < 0.4
                      , aeson >= 1.2
                      , base64-bytestring >= 1.0
                      , binary >= 0.8.5.0
@@ -79,6 +78,7 @@ common base-settings
                      , memory >= 0.14
                      , network-uri
                      , raw-strings-qq >= 1
+                     , relude >= 1
                      , resourcet >= 1.2
                      , retry
                      , text >= 1.2

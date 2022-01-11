@@ -110,7 +110,7 @@ listIncompleteUploads bucket prefix recurse = loop Nothing Nothing
             C.runConduit $
               listIncompleteParts bucket uKey uId
                 C..| CC.sinkList
-          return $ foldl (\sizeSofar p -> opiSize p + sizeSofar) 0 partInfos
+          return $ foldl' (\sizeSofar p -> opiSize p + sizeSofar) 0 partInfos
 
       CL.sourceList $
         map

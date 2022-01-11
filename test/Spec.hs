@@ -76,7 +76,7 @@ qcProps =
                         && all (\s -> s > 0) (drop (nparts - 1) sizes)
                     | nparts == 1 -> -- size may be 0 here.
                       maybe True (\x -> x >= 0 && x <= minPartSize) $
-                        headMay sizes
+                        viaNonEmpty head sizes
                     | otherwise -> False
            in n < 0
                 || ( isPNumsAscendingFrom1 && isOffsetsAsc && isSumSizeOk
@@ -87,18 +87,18 @@ qcProps =
         \(start, end) ->
           let (_, pairs) = L.unzip (selectCopyRanges (start, end))
               -- is last part's snd offset end?
-              isLastPartOk = maybe False ((end ==) . snd) $ lastMay pairs
+              isLastPartOk = maybe False ((end ==) . snd) $ viaNonEmpty last pairs
               -- is first part's fst offset start
-              isFirstPartOk = maybe False ((start ==) . fst) $ headMay pairs
+              isFirstPartOk = maybe False ((start ==) . fst) $ viaNonEmpty head pairs
               -- each pair is >=64MiB except last, and all those parts
               -- have same size.
-              initSizes = maybe [] (map (\(a, b) -> b - a + 1)) $ initMay pairs
+              initSizes = maybe [] (map (\(a, b) -> b - a + 1)) $ viaNonEmpty init pairs
               isPartSizesOk =
                 all (>= minPartSize) initSizes
                   && maybe
                     True
                     (\k -> all (== k) initSizes)
-                    (headMay initSizes)
+                    (viaNonEmpty head initSizes)
               -- returned offsets are contiguous.
               fsts = drop 1 $ map fst pairs
               snds = take (length pairs - 1) $ map snd pairs

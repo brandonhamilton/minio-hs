@@ -25,7 +25,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as BC8
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (isAsciiLower, isAsciiUpper)
+import Data.Char (isAsciiLower, isAsciiUpper, isSpace, isDigit, toUpper)
 import qualified Data.Text as T
 import Lib.Prelude
 import Numeric (showHex)

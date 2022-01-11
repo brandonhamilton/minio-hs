@@ -17,26 +17,15 @@
 module Lib.Prelude
   ( module Exports,
     both,
-    showBS,
-    toStrictBS,
-    fromStrictBS,
+    hush
   )
 where
 
-import Control.Monad.Trans.Maybe as Exports (MaybeT (..), runMaybeT)
-import qualified Data.ByteString.Lazy as LB
 import Data.Time as Exports
   ( UTCTime (..),
     diffUTCTime,
   )
-import Protolude as Exports hiding
-  ( Handler,
-    catch,
-    catches,
-    throwIO,
-    try,
-    yield,
-  )
+import Relude as Exports
 import UnliftIO as Exports
   ( Handler,
     catch,
@@ -44,16 +33,12 @@ import UnliftIO as Exports
     throwIO,
     try,
   )
+import Control.Monad.Trans.Except as Exports (throwE, catchE)
 
 -- | Apply a function on both elements of a pair
 both :: (a -> b) -> (a, a) -> (b, b)
 both f (a, b) = (f a, f b)
 
-showBS :: Show a => a -> ByteString
-showBS a = toUtf8 (show a :: Text)
-
-toStrictBS :: LByteString -> ByteString
-toStrictBS = LB.toStrict
-
-fromStrictBS :: ByteString -> LByteString
-fromStrictBS = LB.fromStrict
+hush :: Alternative m => Either e a -> m a
+hush (Left _)  = empty
+hush (Right x) = pure x

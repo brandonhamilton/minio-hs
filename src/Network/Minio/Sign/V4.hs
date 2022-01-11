@@ -92,7 +92,7 @@ mkAuthHeader accessKey scope signedHeaderKeys sign =
   let authValue =
         B.concat
           [ "AWS4-HMAC-SHA256 Credential=",
-            toUtf8 accessKey,
+            encodeUtf8 accessKey,
             "/",
             scope,
             ", SignedHeaders=",
@@ -119,8 +119,8 @@ signV4 !sp !req =
   let region = fromMaybe "" $ spRegion sp
       ts = spTimeStamp sp
       scope = mkScope ts region
-      accessKey = toUtf8 $ spAccessKey sp
-      secretKey = toUtf8 $ spSecretKey sp
+      accessKey = encodeUtf8 $ spAccessKey sp
+      secretKey = encodeUtf8 $ spSecretKey sp
       expiry = spExpirySecs sp
       sha256Hdr =
         ( "x-amz-content-sha256",
@@ -141,7 +141,7 @@ signV4 !sp !req =
         [ ("X-Amz-Algorithm", "AWS4-HMAC-SHA256"),
           ("X-Amz-Credential", B.concat [accessKey, "/", scope]),
           datePair,
-          ("X-Amz-Expires", maybe "" showBS expiry),
+          ("X-Amz-Expires", maybe "" show expiry),
           ("X-Amz-SignedHeaders", signedHeaderKeys)
         ]
       finalQP =
@@ -179,8 +179,8 @@ mkScope :: UTCTime -> Text -> ByteString
 mkScope ts region =
   B.intercalate
     "/"
-    [ toUtf8 $ Time.formatTime Time.defaultTimeLocale "%Y%m%d" ts,
-      toUtf8 region,
+    [ encodeUtf8 $ Time.formatTime Time.defaultTimeLocale "%Y%m%d" ts,
+      encodeUtf8 region,
       "s3",
       "aws4_request"
     ]
@@ -239,7 +239,7 @@ mkSigningKey :: UTCTime -> Text -> ByteString -> ByteString
 mkSigningKey ts region !secretKey =
   hmacSHA256RawBS "aws4_request"
     . hmacSHA256RawBS "s3"
-    . hmacSHA256RawBS (toUtf8 region)
+    . hmacSHA256RawBS (encodeUtf8 region)
     . hmacSHA256RawBS (awsDateFormatBS ts)
     $ B.concat ["AWS4", secretKey]
 
@@ -256,7 +256,7 @@ signV4PostPolicy ::
 signV4PostPolicy !postPolicyJSON !sp =
   let stringToSign = Base64.encode postPolicyJSON
       region = fromMaybe "" $ spRegion sp
-      signingKey = mkSigningKey (spTimeStamp sp) region $ toUtf8 $ spSecretKey sp
+      signingKey = mkSigningKey (spTimeStamp sp) region $ encodeUtf8 $ spSecretKey sp
       signature = computeSignature stringToSign signingKey
    in Map.fromList
         [ ("x-amz-signature", signature),
@@ -294,7 +294,7 @@ signV4Stream ::
 signV4Stream !payloadLength !sp !req =
   let ts = spTimeStamp sp
       addContentEncoding hs =
-        let ceMay = headMay $ filter (\(x, _) -> x == "content-encoding") hs
+        let ceMay = viaNonEmpty head $ filter (\(x, _) -> x == "content-encoding") hs
          in case ceMay of
               Nothing -> ("content-encoding", "aws-chunked") : hs
               Just (_, ce) ->
@@ -309,8 +309,8 @@ signV4Stream !payloadLength !sp !req =
       signedContentLength = signedStreamLength payloadLength
       streamingHeaders :: [Header]
       streamingHeaders =
-        [ ("x-amz-decoded-content-length", showBS payloadLength),
-          ("content-length", showBS signedContentLength),
+        [ ("x-amz-decoded-content-length", show payloadLength),
+          ("content-length", show signedContentLength),
           ("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
         ]
       headersToSign = getHeadersToSign $ computedHeaders ++ streamingHeaders
@@ -332,7 +332,7 @@ signV4Stream !payloadLength !sp !req =
       stringToSign = mkStringToSign ts scope canonicalReq
       -- 1.3 Compute signature
       -- 1.3.1 compute signing key
-      signingKey = mkSigningKey ts region $ toUtf8 secretKey
+      signingKey = mkSigningKey ts region $ encodeUtf8 secretKey
       -- 1.3.2 Compute signature
       seedSignature = computeSignature stringToSign signingKey
       -- 1.3.3 Compute Auth Header

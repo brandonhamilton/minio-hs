@@ -88,7 +88,7 @@ makePresignedUrl expiry method bucket object region extraQuery extraHeaders = do
   let uri = NClient.getUri req
       uriString = uriToString identity uri ""
 
-  return $ toUtf8 uriString
+  return $ encodeUtf8 uriString
 
 -- | Generate a URL with authentication signature to PUT (upload) an
 -- object. Any extra headers if passed, are signed, and so they are
@@ -174,12 +174,12 @@ data PostPolicyCondition
 
 instance Json.ToJSON PostPolicyCondition where
   toJSON (PPCStartsWith k v) = Json.toJSON ["starts-with", k, v]
-  toJSON (PPCEquals k v) = Json.object [k .= v]
+  toJSON (PPCEquals k v) = Json.object [fromString (toString k) .= v]
   toJSON (PPCRange k minVal maxVal) =
     Json.toJSON [Json.toJSON k, Json.toJSON minVal, Json.toJSON maxVal]
 
   toEncoding (PPCStartsWith k v) = Json.foldable ["starts-with", k, v]
-  toEncoding (PPCEquals k v) = Json.pairs (k .= v)
+  toEncoding (PPCEquals k v) = Json.pairs (fromString (toString k) .= v)
   toEncoding (PPCRange k minVal maxVal) =
     Json.foldable [Json.toJSON k, Json.toJSON minVal, Json.toJSON maxVal]
 
@@ -270,7 +270,7 @@ newPostPolicy expirationTime conds
 
 -- | Convert Post Policy to a string (e.g. for printing).
 showPostPolicy :: PostPolicy -> ByteString
-showPostPolicy = toStrictBS . Json.encode
+showPostPolicy = toStrict . Json.encode
 
 -- | Generate a presigned URL and POST policy to upload files via a
 -- browser. On success, this function returns a URL and POST
@@ -283,7 +283,7 @@ presignedPostPolicy p = do
   signTime <- liftIO $ Time.getCurrentTime
 
   let extraConditions =
-        [ PPCEquals "x-amz-date" (toS $ awsTimeFormat signTime),
+        [ PPCEquals "x-amz-date" (toText $ awsTimeFormat signTime),
           PPCEquals "x-amz-algorithm" "AWS4-HMAC-SHA256",
           PPCEquals
             "x-amz-credential"
@@ -312,7 +312,7 @@ presignedPostPolicy p = do
       mkPair (PPCEquals k v) = Just (k, v)
       mkPair _ = Nothing
       formFromPolicy =
-        H.map toUtf8 $
+        H.map encodeUtf8 $
           H.fromList $
             catMaybes $
               mkPair <$> conditions ppWithCreds
@@ -322,7 +322,7 @@ presignedPostPolicy p = do
       scheme = byteString $ bool "http://" "https://" $ connectIsSecure ci
       region = connectRegion ci
       url =
-        toStrictBS $
+        toStrict $
           toLazyByteString $
             scheme <> byteString (getHostAddr ci)
               <> byteString "/"

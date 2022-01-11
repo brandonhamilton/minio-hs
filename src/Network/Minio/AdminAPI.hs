@@ -434,7 +434,7 @@ healPath bucket prefix = do
       encodeUtf8 $
         "v1/heal/" <> fromMaybe "" bucket <> "/"
           <> fromMaybe "" prefix
-    else encodeUtf8 $ "v1/heal/"
+    else encodeUtf8 $ ("v1/heal/" :: Text)
 
 -- | Get server version and uptime.
 serviceStatus :: Minio ServiceStatus

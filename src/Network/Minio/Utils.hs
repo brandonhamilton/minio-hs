@@ -17,6 +17,7 @@
 module Network.Minio.Utils where
 
 import qualified Conduit as C
+import Control.Exception (IOException)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Control.Monad.Trans.Resource as R
 import qualified Data.ByteString as B
@@ -106,7 +107,7 @@ mkHeaderFromPairs :: [(ByteString, ByteString)] -> [HT.Header]
 mkHeaderFromPairs = map ((\(x, y) -> (mk x, y)))
 
 lookupHeader :: HT.HeaderName -> [HT.Header] -> Maybe ByteString
-lookupHeader hdr = headMay . map snd . filter (\(h, _) -> h == hdr)
+lookupHeader hdr = viaNonEmpty head . map snd . filter (\(h, _) -> h == hdr)
 
 getETagHeader :: [HT.Header] -> Maybe Text
 getETagHeader hs = decodeUtf8Lenient <$> lookupHeader Hdr.hETag hs
@@ -172,7 +173,7 @@ httpLbs req mgr = do
       _ ->
         throwIO $
           NC.HttpExceptionRequest req $
-            NC.StatusCodeException (void resp) (showBS resp)
+            NC.StatusCodeException (void resp) (show resp)
 
   return resp
   where

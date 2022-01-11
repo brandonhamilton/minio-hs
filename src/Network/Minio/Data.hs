@@ -30,7 +30,6 @@ import qualified Data.ByteString.Lazy as LB
 import Data.CaseInsensitive (mk)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Ini as Ini
-import Data.String (IsString (..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time (defaultTimeLocale, formatTime)
@@ -224,9 +223,9 @@ disableTLSCertValidation c = c {connectDisableTLSCertValidation = True}
 getHostAddr :: ConnectInfo -> ByteString
 getHostAddr ci =
   if
-      | port == 80 || port == 443 -> toUtf8 host
+      | port == 80 || port == 443 -> encodeUtf8 host
       | otherwise ->
-        toUtf8 $
+        encodeUtf8 $
           T.concat [host, ":", Lib.Prelude.show port]
   where
     port = connectPort ci
@@ -894,11 +893,11 @@ data FileHeaderInfo
 
 -- | Specify the CSV file header info property.
 fileHeaderInfo :: FileHeaderInfo -> CSVProp
-fileHeaderInfo = CSVProp . H.singleton "FileHeaderInfo" . toString
+fileHeaderInfo = CSVProp . H.singleton "FileHeaderInfo" . asString
   where
-    toString FileHeaderNone = "NONE"
-    toString FileHeaderUse = "USE"
-    toString FileHeaderIgnore = "IGNORE"
+    asString FileHeaderNone = "NONE"
+    asString FileHeaderUse = "USE"
+    asString FileHeaderIgnore = "IGNORE"
 
 -- | Specify the CSV comment character property. Lines starting with
 -- this character are ignored by the server.
@@ -1043,7 +1042,7 @@ defaultS3ReqInfo =
 
 getS3Path :: Maybe Bucket -> Maybe Object -> ByteString
 getS3Path b o =
-  let segments = map toUtf8 $ catMaybes $ b : bool [] [o] (isJust b)
+  let segments = map encodeUtf8 $ catMaybes $ b : bool [] [o] (isJust b)
    in B.concat ["/", B.intercalate "/" segments]
 
 type RegionMap = H.HashMap Bucket Region
